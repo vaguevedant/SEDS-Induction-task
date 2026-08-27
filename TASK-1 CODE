@@ -1,0 +1,58 @@
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import pandas as pd
+import numpy as np
+ 
+plt.style.use('fivethirtyeight')
+ 
+fig, ax = plt.subplots()
+ 
+threshold = 50   #If needed, we can easily change the acceptable range of error
+ 
+data = pd.read_csv("Depth Data1.csv")
+ 
+ 
+def animate(i):                                                     
+ 
+    data = pd.read_csv("Depth Data.csv")
+ 
+    x = data['Point'][:i+1]
+    y = pd.to_numeric(data['Depth (m)'][:i+1], errors='coerce')   # replaces points were sensor gives non integer output with nan
+ 
+    y_fixed = []
+    last_good = None
+                                                   
+    for value in y:
+ 
+        if last_good is None:     #this is just a failsafe if the first value itself is corrupted. It will keep repeating till a valid depth is received
+            if np.isnan(value):
+                y_fixed.append(np.nan)
+                continue
+            else:                            #if the value is an integer, it will be added in the y_fixed array
+                y_fixed.append(value)     
+                last_good = value
+                continue
+ 
+        if np.isnan(value) or abs(value - last_good) > threshold:   #if current value was corrupted, this will replace it with previous value so as to not break the graph
+            y_fixed.append(last_good)
+        else:
+            y_fixed.append(value)
+            last_good = value
+ 
+    y_padded = np.pad(y_fixed, (4, 0), mode='edge')                #Padding means adding the first element of the array sizeof(kernel)-1 times before the first element. This is so that the noisefree graph starts from the exact same point as the raw data graph
+    kernel = [0.2, 0.2, 0.2, 0.2, 0.2]
+    y_noisefree = np.convolve(y_padded, kernel, mode='valid')[:i+1]   #convolution to find running average, so smoothen out the data
+ 
+    ax.clear()
+ 
+    ax.plot(x, y, marker='o', label='Raw data')
+    ax.plot(x, y_noisefree,label='Data after cleaning')
+ 
+    ax.set_title("Live Graph")
+    ax.set_xlabel("Point")
+    ax.set_ylabel("Depth (m)")
+ 
+ani = FuncAnimation(fig, animate, interval=1000)  #interval value can be reduced to plot the graph faster.
+ 
+ 
+plt.show()
