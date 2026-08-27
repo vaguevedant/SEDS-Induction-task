@@ -50,7 +50,7 @@ def animate(i):
 
     ax.legend()
  
-    ax.set_title("Live Graph")
+    ax.set_title("DEPTH VS TIME LIVE GRAPH ")
     ax.set_xlabel("Point")
     ax.set_ylabel("Depth (m)")
  
